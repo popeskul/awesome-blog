@@ -1,0 +1,44 @@
+@startuml
+actor Client
+participant "API Server" as API
+participant "Auth Middleware" as Auth
+participant "Handler" as Handler
+participant "Use Case" as UseCase
+participant "Repository" as Repo
+database "Database" as DB
+
+Client -> API: HTTP Request
+activate API
+
+API -> Auth: Check Authentication
+activate Auth
+Auth --> API: Authenticated
+deactivate Auth
+
+API -> Handler: Route Request
+activate Handler
+
+Handler -> UseCase: Process Request
+activate UseCase
+
+UseCase -> Repo: Fetch/Store Data
+activate Repo
+
+Repo -> DB: Query/Update
+activate DB
+DB --> Repo: Result
+deactivate DB
+
+Repo --> UseCase: Data
+deactivate Repo
+
+UseCase --> Handler: Result
+deactivate UseCase
+
+Handler --> API: Response
+deactivate Handler
+
+API --> Client: HTTP Response
+deactivate API
+
+@enduml

@@ -1,0 +1,15 @@
+server:
+  port: 8080
+  health_check_port: 8081
+  timeouts:
+    write: "15s"
+    read: "15s"
+    idle: "60s"
+
+database:
+  host: "db"
+  port: 5432
+  user: "user"
+  password: "password"
+  dbname: "blogdb"
+  sslmode: "disable"

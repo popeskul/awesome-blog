@@ -1,0 +1,738 @@
+openapi: 3.0.0
+info:
+  title: Awesome Blog API
+  version: 1.0.0
+  description: API for managing blog posts, comments, and users.
+
+paths:
+  /auth/login:
+    post:
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+              example:
+                username: tom@mail.com
+                password: password
+            example:
+              username: tom@mail.com
+              password: password
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token for authentication
+              example:
+                - token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+  /auth/register:
+    post:
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
+            example:
+              username: tom@mail.com
+              email: tom@mail.com
+              password: password
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                username: tom@mail.com
+                email: tom@mail.com
+                createdAt: 2021-01-01T00:00:00Z
+                updatedAt: 2021-01-01T00:00:00Z
+
+  /auth/me:
+    get:
+      summary: Get current user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      summary: Logout user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged out
+        '401':
+          description: Unauthorized
+
+  /api/v1/posts:
+    get:
+      summary: Get all posts
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [ created_at_asc, created_at_desc, title_asc, title_desc ]
+            description: Sorting order for posts
+          example: created_at_desc
+      responses:
+        '200':
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Post'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create a new post
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPost'
+      responses:
+        '201':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+
+  /api/v1/posts/{postId}:
+    get:
+      summary: Get a specific post
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Post details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '404':
+          description: Post not found
+
+    put:
+      summary: Update a post
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePost'
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '404':
+          description: Post not found
+
+    delete:
+      summary: Delete a post
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Post deleted successfully
+        '404':
+          description: Post not found
+
+  /api/v1/posts/{postId}/comments:
+    get:
+      summary: Get comments for a specific post
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          example: 10
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          example: 0
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [ created_at_asc, created_at_desc ]
+          description: Sorting order for comments
+          example: created_at_desc
+      responses:
+        '200':
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Comment'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+              example:
+                comments:
+                  - id: 550e8400-e29b-41d4-a716-446655440000
+                    postId: 123e4567-e89b-12d3-a456-426614174000
+                    content: This is a comment.
+                    authorId: 123e4567-e89b-12d3-a456-426614174000
+                    createdAt: 2021-01-01T00:00:00Z
+                    updatedAt: 2021-01-01T00:00:00Z
+                  - id: 550e8400-e29b-41d4-a716-446655440001
+                    postId: 123e4567-e89b-12d3-a456-426614174000
+                    content: This is another comment.
+                    authorId: 123e4567-e89b-12d3-a456-426614174000
+                    createdAt: 2021-01-01T00:00:00Z
+                    updatedAt: 2021-01-01T00:00:00Z
+                pagination:
+                  total: 1
+                  page: 1
+                  limit: 10
+                  offset: 0
+        '404':
+          description: Post not found
+
+    post:
+      summary: Add a comment to a post
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewComment'
+            example:
+              postId: 123e4567-e89b-12d3-a456-426614174000`
+              content: This is a comment.
+              authorId: 123e4567-e89b-12d3-a456-426614174000`
+      responses:
+        '201':
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                postId: 123e4567-e89b-12d3-a456-426614174000
+                content: This is a comment.
+                authorId: 123e4567-e89b-12d3-a456-426614174000
+                createdAt: 2021-01-01T00:00:00Z
+                updatedAt: 2021-01-01T00:00:00Z
+        '404':
+          description: Post not found
+
+  /api/v1/users:
+    get:
+      summary: Get all users
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          example: 10
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          example: 0
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [ created_at_asc, created_at_desc, username_asc, username_desc ]
+            description: Sorting order for users
+            example: created_at_desc
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+              example:
+                users:
+                  - id: 550e8400-e29b-41d4-a716-446655440000
+                    username: tom@mail.com
+                    email: tom@mail.com
+                    createdAt: 2021-01-01T00:00:00Z
+                    updatedAt: 2021-01-01T00:00:00Z
+                  - id: 550e8400-e29b-41d4-a716-446655440001
+                    username: tom@mail.com
+                    email: tom@mail.com
+                    createdAt: 2021-01-01T00:00:00Z
+                    updatedAt: 2021-01-01T00:00:00Z
+                pagination:
+                  total: 2
+                  page: 1
+                  limit: 10
+                  offset: 0
+
+  /api/v1/users/{userId}:
+    get:
+      summary: Get a specific user
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                username: tom@mail.com
+                email: tom@mail.com
+        '404':
+          description: User not found
+
+    put:
+      summary: Update a user
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+            example:
+              username: tom@mail.com
+              email: tom@mail.com
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                username: tom@mail.com
+                email: tom@mail.com
+        '404':
+          description: User not found
+
+    delete:
+      summary: Delete a user
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '204':
+          description: User deleted successfully
+        '404':
+          description: User not found
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        content:
+          type: string
+          minLength: 1
+        authorId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - content
+        - authorId
+        - createdAt
+        - updatedAt
+      example:
+        id: 550e8400-e29b-41d4-a716-446655440000
+        title: Hello World
+        content: This is my first post.
+        authorId: 123e4567-e89b-12d3-a456-426614174000
+        createdAt: 2021-01-01T00:00:00Z
+        updatedAt: 2021-01-01T00:00:00Z
+
+    NewPost:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        content:
+          type: string
+          minLength: 1
+        authorId:
+          type: string
+          format: uuid
+      required:
+        - title
+        - content
+        - authorId
+      example:
+        title: Hello World
+        content: This is my first post.
+        authorId: 123e4567-e89b-12d3-a456-426614174000
+
+    UpdatePost:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        content:
+          type: string
+          minLength: 1
+      minProperties: 1
+      example:
+        title: Hello World
+        content: This is my first post.
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        postId:
+          type: string
+          format: uuid
+        content:
+          type: string
+          minLength: 1
+        authorId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - postId
+        - content
+        - authorId
+        - createdAt
+        - updatedAt
+      example:
+        id: 550e8400-e29b-41d4-a716-446655440000
+        postId: 123e4567-e89b-12d3-a456-426614174000
+        content: This is a comment.
+        authorId: 123e4567-e89b-12d3-a456-426614174000
+        createdAt: 2021-01-01T00:00:00Z
+        updatedAt: 2021-01-01T00:00:00Z
+
+    NewComment:
+      type: object
+      properties:
+        postId:
+          type: string
+          format: uuid
+        content:
+          type: string
+          minLength: 1
+        authorId:
+          type: string
+          format: uuid
+      required:
+        - postId
+        - content
+        - authorId
+      example:
+        postId: 123e4567-e89b-12d3-a456-426614174000
+        content: This is a comment.
+        authorId: 123e4567-e89b-12d3-a456-426614174000
+
+    UpdateComment:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+      required:
+        - content
+      example:
+        content: This is a comment.
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_-]+$'
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - username
+        - email
+        - createdAt
+        - updatedAt
+      example:
+        id: 550e8400-e29b-41d4-a716-446655440000
+        username: tom@mail.com
+        email: tom@mail.com
+        createdAt: 2021-01-01T00:00:00Z
+        updatedAt: 2021-01-01T00:00:00Z
+
+    NewUser:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_-]+$'
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
+      required:
+        - username
+        - email
+        - password
+      example:
+        username: tom@mail.com
+        email: tom@mail.com
+        password: password
+
+    UpdateUser:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_-]+$'
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
+      minProperties: 1
+      example:
+        username: tom@mail.com
+        email: tom@mail.com
+        password: password
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of items
+        page:
+          type: integer
+          description: Current page number
+        limit:
+          type: integer
+          description: Number of items per page
+        offset:
+          type: integer
+          description: Number of items to skip before starting to collect the result set
+        sort:
+          type: string
+          description: Sorting order
+      required:
+        - total
+        - page
+        - limit
+        - offset
+        - sort
+      example:
+        total: 100
+        page: 1
+        limit: 10
+        offset: 0
+        sort: created_at_desc

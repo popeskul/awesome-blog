@@ -1,0 +1,45 @@
+@startuml
+package "cmd" {
+    [server]
+}
+
+package "internal" {
+    package "delivery" {
+        [http]
+    }
+    package "usecase" {
+        [post_usecase]
+        [user_usecase]
+        [comment_usecase]
+    }
+    package "repository" {
+        [post_repository]
+        [user_repository]
+        [comment_repository]
+    }
+    package "domain" {
+        [entities]
+    }
+    package "middleware" {
+        [auth_middleware]
+    }
+}
+
+package "config" {
+    [app_config]
+}
+
+[server] --> [http]
+[http] --> [post_usecase]
+[http] --> [user_usecase]
+[http] --> [comment_usecase]
+[post_usecase] --> [post_repository]
+[user_usecase] --> [user_repository]
+[comment_usecase] --> [comment_repository]
+[post_repository] --> [entities]
+[user_repository] --> [entities]
+[comment_repository] --> [entities]
+[http] --> [auth_middleware]
+[server] --> [app_config]
+
+@enduml
